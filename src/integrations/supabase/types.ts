@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      device_inventories: {
+        Row: {
+          device_id: string
+          inventory: Json
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          inventory: Json
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          inventory?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      device_progress: {
+        Row: {
+          checked: Json
+          device_id: string
+          incident_type: string
+          updated_at: string
+        }
+        Insert: {
+          checked: Json
+          device_id: string
+          incident_type: string
+          updated_at?: string
+        }
+        Update: {
+          checked?: Json
+          device_id?: string
+          incident_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
