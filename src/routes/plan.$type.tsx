@@ -52,11 +52,13 @@ function PlanPage() {
     setError(null);
     try {
       const inventory = await loadInventory();
+      const description = incidentId === "other" ? getOtherDescription() : "";
       const result = await generateActionPlan({
         data: {
           incidentType: incidentId,
           incidentTitle: incident.title,
           inventory: inventory as unknown as Record<string, unknown> | null,
+          description: description || undefined,
         },
       });
       setPlan(result);
@@ -78,6 +80,7 @@ function PlanPage() {
       setLoading(false);
     }
   }, [incidentId, incident.title]);
+
 
   useEffect(() => {
     setCurrentIncident(incidentId);

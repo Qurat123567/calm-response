@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PanicRouteImport } from './routes/panic'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as IncidentsRouteImport } from './routes/incidents'
+import { Route as DescribeRouteImport } from './routes/describe'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlanTypeRouteImport } from './routes/plan.$type'
 
@@ -30,6 +31,11 @@ const IncidentsRoute = IncidentsRouteImport.update({
   path: '/incidents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DescribeRoute = DescribeRouteImport.update({
+  id: '/describe',
+  path: '/describe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const PlanTypeRoute = PlanTypeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/describe': typeof DescribeRoute
   '/incidents': typeof IncidentsRoute
   '/inventory': typeof InventoryRoute
   '/panic': typeof PanicRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/describe': typeof DescribeRoute
   '/incidents': typeof IncidentsRoute
   '/inventory': typeof InventoryRoute
   '/panic': typeof PanicRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/describe': typeof DescribeRoute
   '/incidents': typeof IncidentsRoute
   '/inventory': typeof InventoryRoute
   '/panic': typeof PanicRoute
@@ -65,14 +74,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
+  fullPaths:
+    | '/'
+    | '/describe'
+    | '/incidents'
+    | '/inventory'
+    | '/panic'
+    | '/plan/$type'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
-  id: '__root__' | '/' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
+  to: '/' | '/describe' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
+  id:
+    | '__root__'
+    | '/'
+    | '/describe'
+    | '/incidents'
+    | '/inventory'
+    | '/panic'
+    | '/plan/$type'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DescribeRoute: typeof DescribeRoute
   IncidentsRoute: typeof IncidentsRoute
   InventoryRoute: typeof InventoryRoute
   PanicRoute: typeof PanicRoute
@@ -102,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IncidentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/describe': {
+      id: '/describe'
+      path: '/describe'
+      fullPath: '/describe'
+      preLoaderRoute: typeof DescribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DescribeRoute: DescribeRoute,
   IncidentsRoute: IncidentsRoute,
   InventoryRoute: InventoryRoute,
   PanicRoute: PanicRoute,
