@@ -6,11 +6,13 @@ import {
   INCIDENTS,
   loadInventory,
   loadProgress,
+  savePlan,
   saveProgress,
   setCurrentIncident,
   type IncidentType,
 } from "@/lib/aftermath-store";
 import { generateActionPlan, type GroqPlan } from "@/lib/groq-plan.functions";
+
 
 const VALID: IncidentType[] = INCIDENTS.map((i) => i.id);
 
