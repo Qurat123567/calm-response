@@ -48,7 +48,7 @@ function PlanPage() {
     setLoading(true);
     setError(null);
     try {
-      const inventory = loadInventory();
+      const inventory = await loadInventory();
       const result = await generateActionPlan({
         data: {
           incidentType: incidentId,
@@ -57,7 +57,7 @@ function PlanPage() {
         },
       });
       setPlan(result);
-      const saved = loadProgress(incidentId);
+      const saved = await loadProgress(incidentId);
       setChecked(
         saved && saved.length === result.steps.length
           ? saved
@@ -79,8 +79,9 @@ function PlanPage() {
   const toggle = (i: number) => {
     const next = checked.map((v, idx) => (idx === i ? !v : v));
     setChecked(next);
-    saveProgress(incidentId, next);
+    void saveProgress(incidentId, next);
   };
+
 
   const copy = async (text: string, idx: number) => {
     try {
