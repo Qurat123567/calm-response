@@ -95,10 +95,11 @@ export async function saveProgress(id: IncidentType, checked: boolean[]): Promis
   await supabase
     .from("device_progress")
     .upsert(
-      { device_id: deviceId, incident_type: id, checked: checked as unknown as Record<string, unknown>, updated_at: new Date().toISOString() },
+      { device_id: deviceId, incident_type: id, checked: checked as never, updated_at: new Date().toISOString() },
       { onConflict: "device_id,incident_type" },
     );
 }
+
 
 export async function loadProgress(id: IncidentType): Promise<boolean[] | null> {
   if (typeof window === "undefined") return null;
