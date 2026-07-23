@@ -1,15 +1,16 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Check, Copy, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Check, Copy, Loader2, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
-  getSamplePlan,
   INCIDENTS,
+  loadInventory,
   loadProgress,
   saveProgress,
   setCurrentIncident,
   type IncidentType,
 } from "@/lib/aftermath-store";
+import { generateActionPlan, type GroqPlan } from "@/lib/groq-plan.functions";
 
 const VALID: IncidentType[] = INCIDENTS.map((i) => i.id);
 
@@ -38,20 +39,42 @@ function PlanPage() {
   const incident = INCIDENTS.find((i) => i.id === incidentId)!;
 
   const [loading, setLoading] = useState(true);
-  const [plan, setPlan] = useState(() => getSamplePlan(incidentId));
+  const [error, setError] = useState<string | null>(null);
+  const [plan, setPlan] = useState<GroqPlan | null>(null);
   const [checked, setChecked] = useState<boolean[]>([]);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
+  const fetchPlan = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const inventory = loadInventory();
+      const result = await generateActionPlan({
+        data: {
+          incidentType: incidentId,
+          incidentTitle: incident.title,
+          inventory: inventory as unknown as Record<string, unknown> | null,
+        },
+      });
+      setPlan(result);
+      const saved = loadProgress(incidentId);
+      setChecked(
+        saved && saved.length === result.steps.length
+          ? saved
+          : new Array(result.steps.length).fill(false),
+      );
+    } catch (err) {
+      console.error(err);
+      setError("We couldn't generate your plan just now. Take a breath and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [incidentId, incident.title]);
+
   useEffect(() => {
     setCurrentIncident(incidentId);
-    setLoading(true);
-    const p = getSamplePlan(incidentId);
-    setPlan(p);
-    const saved = loadProgress(incidentId);
-    setChecked(saved && saved.length === p.steps.length ? saved : new Array(p.steps.length).fill(false));
-    const t = setTimeout(() => setLoading(false), 900);
-    return () => clearTimeout(t);
-  }, [incidentId]);
+    fetchPlan();
+  }, [incidentId, fetchPlan]);
 
   const toggle = (i: number) => {
     const next = checked.map((v, idx) => (idx === i ? !v : v));
@@ -69,9 +92,6 @@ function PlanPage() {
     }
   };
 
-  const done = checked.filter(Boolean).length;
-  const total = plan.steps.length;
-
   if (loading) {
     return (
       <AppShell>
@@ -83,6 +103,34 @@ function PlanPage() {
       </AppShell>
     );
   }
+
+  if (error || !plan) {
+    return (
+      <AppShell>
+        <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+          <h1 className="text-xl font-semibold text-foreground">Something got in the way</h1>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            {error ?? "We couldn't generate your plan just now."}
+          </p>
+          <button
+            onClick={fetchPlan}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            <RefreshCw className="h-4 w-4" /> Try again
+          </button>
+          <Link
+            to="/incidents"
+            className="mt-3 text-sm text-muted-foreground underline-offset-4 hover:underline"
+          >
+            Pick a different situation
+          </Link>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const done = checked.filter(Boolean).length;
+  const total = plan.steps.length;
 
   return (
     <AppShell>
@@ -124,11 +172,11 @@ function PlanPage() {
                         checked[i] ? "text-muted-foreground line-through" : "text-foreground"
                       }`}
                     >
-                      {s.text}
+                      {s.action}
                     </span>
                   </div>
-                  {s.detail && (
-                    <p className="mt-1 pl-6 text-sm text-muted-foreground">{s.detail}</p>
+                  {s.reason && (
+                    <p className="mt-1 pl-6 text-sm text-muted-foreground">Why: {s.reason}</p>
                   )}
                 </div>
               </label>
@@ -138,7 +186,7 @@ function PlanPage() {
       </section>
 
       <section className="mt-5">
-        <h2 className="mb-3 text-base font-semibold">Pre-written messages</h2>
+        <h2 className="mb-3 text-base font-semibold">Ready to send</h2>
         <div className="space-y-3">
           {plan.messages.map((m, i) => (
             <div key={i} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -166,10 +214,6 @@ function PlanPage() {
           ))}
         </div>
       </section>
-
-      <p className="mt-6 text-center text-xs text-muted-foreground">
-        Sample plan for now. A tailored AI version will replace this soon.
-      </p>
     </AppShell>
   );
 }
