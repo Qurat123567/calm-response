@@ -4,6 +4,7 @@ import { Check, Copy, Loader2, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
   INCIDENTS,
+  getOtherDescription,
   loadInventory,
   loadProgress,
   savePlan,
