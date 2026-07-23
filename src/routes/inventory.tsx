@@ -241,7 +241,7 @@ function InventoryPage() {
             type="submit"
             className="w-full rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90"
           >
-            Save & continue
+            {saved ? "Saved ✓" : isEdit ? "Save changes" : "Save & continue"}
           </button>
         </div>
       </form>
