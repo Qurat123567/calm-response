@@ -25,6 +25,10 @@ function IncidentsPage() {
 
   const pick = (id: IncidentType) => {
     setCurrentIncident(id);
+    if (id === "other") {
+      navigate({ to: "/describe" });
+      return;
+    }
     navigate({ to: "/plan/$type", params: { type: id } });
   };
 
