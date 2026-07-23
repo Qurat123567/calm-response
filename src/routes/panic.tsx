@@ -36,10 +36,12 @@ function PanicPage() {
     setIncidentId(id);
     if (id) {
       const p = getSamplePlan(id);
-      const prog = loadProgress(id);
-      setChecked(prog ?? new Array(p.steps.length).fill(false));
+      loadProgress(id).then((prog) => {
+        setChecked(prog ?? new Array(p.steps.length).fill(false));
+      });
     }
   }, []);
+
 
   if (!incidentId) {
     return (
