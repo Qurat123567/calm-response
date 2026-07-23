@@ -84,15 +84,17 @@ function InventoryPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const existing = loadInventory();
-    if (existing) setInv(existing);
+    loadInventory().then((existing) => {
+      if (existing) setInv(existing);
+    });
   }, []);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveInventory({ ...inv, completed: true });
+    await saveInventory({ ...inv, completed: true });
     navigate({ to: "/incidents" });
   };
+
 
   return (
     <AppShell>
