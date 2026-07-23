@@ -114,31 +114,31 @@ export async function loadProgress(id: IncidentType): Promise<boolean[] | null> 
   return data.checked as boolean[];
 }
 
-export type PlanStep = { text: string; detail?: string };
+export type PlanStep = { action: string; reason?: string };
 export type PlanMessage = { title: string; body: string };
 export type Plan = { steps: PlanStep[]; messages: PlanMessage[] };
 
-export function getSamplePlan(id: IncidentType): Plan {
-  const base: Record<IncidentType, Plan> = {
-    "phone-stolen": {
-      steps: [
-        { text: "Use Find My / Find My Device to locate or mark the phone as lost." },
-        { text: "Remotely sign out of your Apple ID / Google account on that device." },
-        { text: "Call your carrier and suspend the SIM." },
-        { text: "Change passwords for email, banking, and social apps." },
-        { text: "Enable 2FA on critical accounts from a trusted device." },
-        { text: "File a police report if stolen — you'll need it for insurance." },
-      ],
-      messages: [
-        { title: "Message to your bank", body: "Hi, my phone was stolen on [date]. Please flag my account for unusual activity and require additional verification on any transaction over [amount] until further notice." },
-        { title: "Message to your carrier", body: "Hello, my phone was stolen/lost. Please suspend service and SIM on line [phone number] immediately. I'll need a replacement SIM as soon as possible." },
-        { title: "Message to close contacts", body: "Heads up — my phone was stolen. If you get odd messages from my number, ignore them. Best way to reach me right now is [email / alt number]." },
-      ],
-    },
-    "laptop-stolen": { steps: [], messages: [] },
-    "email-hacked": { steps: [], messages: [] },
-    "social-hacked": { steps: [], messages: [] },
-    "client-scam": { steps: [], messages: [] },
-  };
-  return base[id];
+export async function savePlan(id: IncidentType, plan: Plan): Promise<void> {
+  if (typeof window === "undefined") return;
+  const deviceId = getDeviceId();
+  await supabase
+    .from("device_plans")
+    .upsert(
+      { device_id: deviceId, incident_type: id, plan: plan as never, updated_at: new Date().toISOString() },
+      { onConflict: "device_id,incident_type" },
+    );
 }
+
+export async function loadPlan(id: IncidentType): Promise<Plan | null> {
+  if (typeof window === "undefined") return null;
+  const deviceId = getDeviceId();
+  const { data, error } = await supabase
+    .from("device_plans")
+    .select("plan")
+    .eq("device_id", deviceId)
+    .eq("incident_type", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.plan as Plan;
+}
+
