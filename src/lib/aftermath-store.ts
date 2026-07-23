@@ -12,7 +12,8 @@ export type IncidentType =
   | "laptop-stolen"
   | "email-hacked"
   | "social-hacked"
-  | "client-scam";
+  | "client-scam"
+  | "other";
 
 export const INCIDENTS: { id: IncidentType; title: string; blurb: string; emoji: string }[] = [
   { id: "phone-stolen", title: "Phone Stolen or Lost", blurb: "Lock it, wipe it, protect your accounts.", emoji: "📱" },
@@ -20,7 +21,9 @@ export const INCIDENTS: { id: IncidentType; title: string; blurb: string; emoji:
   { id: "email-hacked", title: "Email Compromised / Hacked", blurb: "Kick out intruders, restore control.", emoji: "✉️" },
   { id: "social-hacked", title: "Social Account Hacked", blurb: "Report, recover, notify your circle.", emoji: "🧑‍💻" },
   { id: "client-scam", title: "Client Scam / Non-Payment / Ghosted", blurb: "Document, escalate, protect your work.", emoji: "🧾" },
+  { id: "other", title: "Something else", blurb: "Not sure, or it's different — let's figure it out together.", emoji: "🤔" },
 ];
+
 
 export type Inventory = {
   bankApps: string[];
