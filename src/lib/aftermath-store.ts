@@ -68,10 +68,11 @@ export async function saveInventory(inv: Inventory): Promise<void> {
   await supabase
     .from("device_inventories")
     .upsert(
-      { device_id: deviceId, inventory: inv as unknown as Record<string, unknown>, updated_at: new Date().toISOString() },
+      { device_id: deviceId, inventory: inv as never, updated_at: new Date().toISOString() },
       { onConflict: "device_id" },
     );
 }
+
 
 export async function hasCompletedInventory(): Promise<boolean> {
   const inv = await loadInventory();
