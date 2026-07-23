@@ -27,8 +27,9 @@ function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setReturning(hasCompletedInventory());
+    hasCompletedInventory().then(setReturning).catch(() => setReturning(false));
   }, []);
+
 
   return (
     <AppShell>

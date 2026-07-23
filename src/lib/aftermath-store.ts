@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type IncidentType =
   | "phone-stolen"
   | "laptop-stolen"
@@ -24,9 +26,8 @@ export type Inventory = {
   completed: boolean;
 };
 
-const KEY = "aftermath.inventory.v1";
+const DEVICE_KEY = "aftermath.deviceId.v1";
 const INCIDENT_KEY = "aftermath.currentIncident.v1";
-const PROGRESS_PREFIX = "aftermath.progress.";
 
 export const emptyInventory = (): Inventory => ({
   bankApps: [],
@@ -39,24 +40,42 @@ export const emptyInventory = (): Inventory => ({
   completed: false,
 });
 
-export function loadInventory(): Inventory | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as Inventory;
-  } catch {
-    return null;
+function getDeviceId(): string {
+  if (typeof window === "undefined") return "ssr";
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(DEVICE_KEY, id);
   }
+  return id;
 }
 
-export function saveInventory(inv: Inventory) {
+export async function loadInventory(): Promise<Inventory | null> {
+  if (typeof window === "undefined") return null;
+  const deviceId = getDeviceId();
+  const { data, error } = await supabase
+    .from("device_inventories")
+    .select("inventory")
+    .eq("device_id", deviceId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.inventory as Inventory;
+}
+
+export async function saveInventory(inv: Inventory): Promise<void> {
   if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(inv));
+  const deviceId = getDeviceId();
+  await supabase
+    .from("device_inventories")
+    .upsert(
+      { device_id: deviceId, inventory: inv as never, updated_at: new Date().toISOString() },
+      { onConflict: "device_id" },
+    );
 }
 
-export function hasCompletedInventory(): boolean {
-  const inv = loadInventory();
+
+export async function hasCompletedInventory(): Promise<boolean> {
+  const inv = await loadInventory();
   return !!inv?.completed;
 }
 
@@ -70,19 +89,29 @@ export function getCurrentIncident(): IncidentType | null {
   return (localStorage.getItem(INCIDENT_KEY) as IncidentType | null) ?? null;
 }
 
-export function saveProgress(id: IncidentType, checked: boolean[]) {
+export async function saveProgress(id: IncidentType, checked: boolean[]): Promise<void> {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PROGRESS_PREFIX + id, JSON.stringify(checked));
+  const deviceId = getDeviceId();
+  await supabase
+    .from("device_progress")
+    .upsert(
+      { device_id: deviceId, incident_type: id, checked: checked as never, updated_at: new Date().toISOString() },
+      { onConflict: "device_id,incident_type" },
+    );
 }
 
-export function loadProgress(id: IncidentType): boolean[] | null {
+
+export async function loadProgress(id: IncidentType): Promise<boolean[] | null> {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(PROGRESS_PREFIX + id);
-    return raw ? (JSON.parse(raw) as boolean[]) : null;
-  } catch {
-    return null;
-  }
+  const deviceId = getDeviceId();
+  const { data, error } = await supabase
+    .from("device_progress")
+    .select("checked")
+    .eq("device_id", deviceId)
+    .eq("incident_type", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.checked as boolean[];
 }
 
 export type PlanStep = { text: string; detail?: string };
@@ -106,66 +135,10 @@ export function getSamplePlan(id: IncidentType): Plan {
         { title: "Message to close contacts", body: "Heads up — my phone was stolen. If you get odd messages from my number, ignore them. Best way to reach me right now is [email / alt number]." },
       ],
     },
-    "laptop-stolen": {
-      steps: [
-        { text: "Sign out of all sessions in Google, Apple, Microsoft accounts." },
-        { text: "Revoke browser sessions and change your primary email password." },
-        { text: "Rotate passwords for banking, cloud storage, and work tools." },
-        { text: "Notify your bank; freeze cards saved in the browser if needed." },
-        { text: "Enable Find My / Locate on the device; wipe remotely if possible." },
-        { text: "File a police report and notify your employer or clients." },
-      ],
-      messages: [
-        { title: "Message to your employer / client", body: "Hi — my laptop was stolen on [date]. I've already rotated passwords for [tools]. I'll be working from a backup device while I sort a replacement. No client data was stored locally / [describe what was]." },
-        { title: "Message to your bank", body: "Hi, my laptop was stolen. Please flag my account and require extra verification on any online transaction until I confirm otherwise." },
-        { title: "Message to close contacts", body: "Heads up: my laptop was stolen. If anyone messages you pretending to be me asking for money or logins, it isn't me." },
-      ],
-    },
-    "email-hacked": {
-      steps: [
-        { text: "From a trusted device, change your email password to something new and long." },
-        { text: "Sign out all other sessions in your account security page." },
-        { text: "Turn on 2FA and remove any unfamiliar recovery methods." },
-        { text: "Check filters and forwarding rules — attackers hide there." },
-        { text: "Reset passwords on any account linked to that email." },
-        { text: "Notify contacts if scam messages went out from your address." },
-      ],
-      messages: [
-        { title: "Message to your contacts", body: "Hi — my email was hacked earlier today. If you got anything odd from me (money requests, weird links), please ignore and delete it. I've secured the account now." },
-        { title: "Message to your bank", body: "Hi, my email account was compromised. Please flag my account for extra verification on password resets and transactions until I confirm otherwise." },
-        { title: "Message to your email provider support", body: "Hello, my account was accessed by someone else on [date/time approx]. I've regained access and changed the password. Please review recent activity and confirm no forwarding rules or recovery info remain that I didn't set." },
-      ],
-    },
-    "social-hacked": {
-      steps: [
-        { text: "Use the platform's 'my account was hacked' recovery flow." },
-        { text: "Change the linked email password first, then the social password." },
-        { text: "Turn on 2FA and remove unknown devices from active sessions." },
-        { text: "Report impersonation posts and DMs from your account." },
-        { text: "Post a note (from another account) warning followers." },
-        { text: "Review connected apps and revoke anything unfamiliar." },
-      ],
-      messages: [
-        { title: "Message to your followers", body: "Quick heads up: my [platform] was hacked. If you got a DM from me about crypto / gift cards / anything financial in the last 24 hours, it wasn't me. Recovering the account now." },
-        { title: "Message to platform support", body: "Hi, my account @[handle] was compromised on [date]. I no longer have access / I've regained access. Please review recent posts and DMs and remove anything the attacker sent." },
-        { title: "Message to close contacts", body: "My [platform] got hacked. Ignore anything weird from that account. Reach me on [alt channel] instead for now." },
-      ],
-    },
-    "client-scam": {
-      steps: [
-        { text: "Gather every message, invoice, and file exchange in one folder." },
-        { text: "Send a firm but professional final payment reminder with a deadline." },
-        { text: "Revoke access to any files, drives, or tools you still control." },
-        { text: "If you used a freelance platform, open a formal dispute." },
-        { text: "Consider a small-claims filing or a collections service for larger amounts." },
-        { text: "Write a short internal note on what you'll change in future contracts." },
-      ],
-      messages: [
-        { title: "Final payment reminder", body: "Hi [name], following up on invoice [#] for [amount], now [X] days overdue. Please confirm payment by [date]. After that I'll need to pause access to the delivered work and escalate through [platform / small claims]." },
-        { title: "Platform dispute message", body: "Hi support, I'm opening a dispute on contract [ID]. Work was delivered on [date] per the agreed scope. Client has not responded to [N] payment requests. Attaching messages and deliverables." },
-        { title: "Message to the client (firm, professional)", body: "Hi [name], I haven't heard back on invoice [#]. I want to resolve this directly rather than escalate. Please reply by [date] with a payment date or a reason for the delay." },
-      ],
-    },
+    "laptop-stolen": { steps: [], messages: [] },
+    "email-hacked": { steps: [], messages: [] },
+    "social-hacked": { steps: [], messages: [] },
+    "client-scam": { steps: [], messages: [] },
   };
   return base[id];
 }
