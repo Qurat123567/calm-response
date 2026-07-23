@@ -56,11 +56,10 @@ function DescribePage() {
             Something else
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Tell me what happened
+            Take a breath. Tell me in your own words.
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            A few sentences is enough. Aftermath will build a calm, ordered plan and
-            ready-to-send messages tailored to your situation.
+            No form to fill out — just a short note. A sentence or two is plenty.
           </p>
         </div>
         <Link
@@ -73,14 +72,12 @@ function DescribePage() {
 
       <form onSubmit={submit} className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <label
-            htmlFor="describe"
-            className="block text-sm font-semibold text-foreground"
-          >
-            What's going on?
+          <label htmlFor="describe" className="block text-sm font-semibold text-foreground">
+            What happened?
           </label>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            You don't need to be technical. Plain words are best.
+          <p className="mt-1 text-sm text-muted-foreground">
+            A few things that help: what was affected, when you noticed, and anything you've
+            already tried. If you're not sure, that's okay — write what you know.
           </p>
           <textarea
             id="describe"
@@ -88,14 +85,14 @@ function DescribePage() {
             onChange={(e) => setText(e.target.value.slice(0, MAX))}
             rows={6}
             maxLength={MAX}
-            placeholder="e.g. Someone I paid on a freelance site has vanished and my account there is now locked."
+            placeholder="e.g. I got an email this morning saying my Stripe login was changed from a device I don't recognise. I haven't tried to sign in yet."
             className="mt-3 w-full resize-y rounded-xl border border-border bg-background p-3 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground">
             <span>
               {trimmed.length < MIN
-                ? `Add ${MIN - trimmed.length} more character${MIN - trimmed.length === 1 ? "" : "s"}`
-                : "Looks good"}
+                ? "Just a sentence or two is enough."
+                : "That's enough to work with."}
             </span>
             <span>
               {text.length}/{MAX}
@@ -109,8 +106,11 @@ function DescribePage() {
             disabled={!canContinue}
             className="w-full rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Generate my plan
+            Build my plan
           </button>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            You'll get a calm, ordered plan next — nothing is sent anywhere yet.
+          </p>
         </div>
       </form>
     </AppShell>
