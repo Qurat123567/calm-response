@@ -1,4 +1,11 @@
-import { supabase } from "@/integrations/supabase/client";
+import {
+  getInventory as getInventoryFn,
+  saveInventory as saveInventoryFn,
+  getProgress as getProgressFn,
+  saveProgress as saveProgressFn,
+  getPlan as getPlanFn,
+  savePlan as savePlanFn,
+} from "@/lib/device-store.functions";
 
 export type IncidentType =
   | "phone-stolen"
@@ -41,7 +48,7 @@ export const emptyInventory = (): Inventory => ({
 });
 
 function getDeviceId(): string {
-  if (typeof window === "undefined") return "ssr";
+  if (typeof window === "undefined") return "00000000-0000-0000-0000-000000000000";
   let id = localStorage.getItem(DEVICE_KEY);
   if (!id) {
     id = crypto.randomUUID();
@@ -52,27 +59,18 @@ function getDeviceId(): string {
 
 export async function loadInventory(): Promise<Inventory | null> {
   if (typeof window === "undefined") return null;
-  const deviceId = getDeviceId();
-  const { data, error } = await supabase
-    .from("device_inventories")
-    .select("inventory")
-    .eq("device_id", deviceId)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data.inventory as Inventory;
+  try {
+    const result = await getInventoryFn({ data: { deviceId: getDeviceId() } });
+    return (result as Inventory | null) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function saveInventory(inv: Inventory): Promise<void> {
   if (typeof window === "undefined") return;
-  const deviceId = getDeviceId();
-  await supabase
-    .from("device_inventories")
-    .upsert(
-      { device_id: deviceId, inventory: inv as never, updated_at: new Date().toISOString() },
-      { onConflict: "device_id" },
-    );
+  await saveInventoryFn({ data: { deviceId: getDeviceId(), inventory: inv } });
 }
-
 
 export async function hasCompletedInventory(): Promise<boolean> {
   const inv = await loadInventory();
@@ -91,27 +89,17 @@ export function getCurrentIncident(): IncidentType | null {
 
 export async function saveProgress(id: IncidentType, checked: boolean[]): Promise<void> {
   if (typeof window === "undefined") return;
-  const deviceId = getDeviceId();
-  await supabase
-    .from("device_progress")
-    .upsert(
-      { device_id: deviceId, incident_type: id, checked: checked as never, updated_at: new Date().toISOString() },
-      { onConflict: "device_id,incident_type" },
-    );
+  await saveProgressFn({ data: { deviceId: getDeviceId(), incidentType: id, checked } });
 }
-
 
 export async function loadProgress(id: IncidentType): Promise<boolean[] | null> {
   if (typeof window === "undefined") return null;
-  const deviceId = getDeviceId();
-  const { data, error } = await supabase
-    .from("device_progress")
-    .select("checked")
-    .eq("device_id", deviceId)
-    .eq("incident_type", id)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data.checked as boolean[];
+  try {
+    const result = await getProgressFn({ data: { deviceId: getDeviceId(), incidentType: id } });
+    return (result as boolean[] | null) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export type PlanStep = { action: string; reason?: string };
@@ -120,25 +108,15 @@ export type Plan = { steps: PlanStep[]; messages: PlanMessage[] };
 
 export async function savePlan(id: IncidentType, plan: Plan): Promise<void> {
   if (typeof window === "undefined") return;
-  const deviceId = getDeviceId();
-  await supabase
-    .from("device_plans")
-    .upsert(
-      { device_id: deviceId, incident_type: id, plan: plan as never, updated_at: new Date().toISOString() },
-      { onConflict: "device_id,incident_type" },
-    );
+  await savePlanFn({ data: { deviceId: getDeviceId(), incidentType: id, plan } });
 }
 
 export async function loadPlan(id: IncidentType): Promise<Plan | null> {
   if (typeof window === "undefined") return null;
-  const deviceId = getDeviceId();
-  const { data, error } = await supabase
-    .from("device_plans")
-    .select("plan")
-    .eq("device_id", deviceId)
-    .eq("incident_type", id)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data.plan as Plan;
+  try {
+    const result = await getPlanFn({ data: { deviceId: getDeviceId(), incidentType: id } });
+    return (result as Plan | null) ?? null;
+  } catch {
+    return null;
+  }
 }
-
