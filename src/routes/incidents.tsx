@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { INCIDENTS, setCurrentIncident, type IncidentType } from "@/lib/aftermath-store";
 
@@ -52,6 +52,15 @@ function IncidentsPage() {
             </div>
           </button>
         ))}
+      </div>
+      <div className="mt-6 text-center">
+        <Link
+          to="/inventory"
+          search={{ edit: true }}
+          className="text-sm text-muted-foreground underline hover:text-foreground"
+        >
+          Edit my inventory
+        </Link>
       </div>
     </AppShell>
   );

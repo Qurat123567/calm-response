@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -8,7 +8,12 @@ import {
   type Inventory,
 } from "@/lib/aftermath-store";
 
+type InventorySearch = { edit?: boolean };
+
 export const Route = createFileRoute("/inventory")({
+  validateSearch: (search: Record<string, unknown>): InventorySearch => ({
+    edit: search.edit === true || search.edit === "true" || search.edit === 1 || search.edit === "1",
+  }),
   head: () => ({
     meta: [
       { title: "Your digital inventory — Aftermath" },
@@ -26,6 +31,7 @@ export const Route = createFileRoute("/inventory")({
   }),
   component: InventoryPage,
 });
+
 
 const BANK_OPTIONS = ["Revolut", "Wise", "PayPal", "Venmo", "Cash App", "Traditional bank app"];
 const EMAIL_OPTIONS = ["Gmail", "Outlook / Hotmail", "iCloud Mail", "Proton Mail", "Yahoo", "Custom domain"];
@@ -81,7 +87,9 @@ function toggle<T>(arr: T[], v: T): T[] {
 
 function InventoryPage() {
   const [inv, setInv] = useState<Inventory>(emptyInventory);
+  const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
+  const { edit: isEdit } = Route.useSearch();
 
   useEffect(() => {
     loadInventory().then((existing) => {
@@ -92,21 +100,38 @@ function InventoryPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     await saveInventory({ ...inv, completed: true });
-    navigate({ to: "/incidents" });
+    if (isEdit) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      navigate({ to: "/incidents" });
+    } else {
+      navigate({ to: "/incidents" });
+    }
   };
-
 
   return (
     <AppShell>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Your digital inventory
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Not passwords — just what you use. This helps Aftermath give you the right steps if
-          something ever goes wrong.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            {isEdit ? "Edit your inventory" : "Your digital inventory"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isEdit
+              ? "Update anything that's changed. Your saved plans will use the new list next time."
+              : "Not passwords — just what you use. This helps Aftermath give you the right steps if something ever goes wrong."}
+          </p>
+        </div>
+        {isEdit && (
+          <Link
+            to="/incidents"
+            className="shrink-0 text-sm text-muted-foreground underline hover:text-foreground"
+          >
+            Cancel
+          </Link>
+        )}
       </div>
+
 
       <form onSubmit={submit} className="space-y-4">
         <Section title="Bank & payment apps" hint="Which do you actively use?">
@@ -216,7 +241,7 @@ function InventoryPage() {
             type="submit"
             className="w-full rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90"
           >
-            Save & continue
+            {saved ? "Saved ✓" : isEdit ? "Save changes" : "Save & continue"}
           </button>
         </div>
       </form>
