@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -8,7 +8,12 @@ import {
   type Inventory,
 } from "@/lib/aftermath-store";
 
+type InventorySearch = { edit?: boolean };
+
 export const Route = createFileRoute("/inventory")({
+  validateSearch: (search: Record<string, unknown>): InventorySearch => ({
+    edit: search.edit === true || search.edit === "true" || search.edit === 1 || search.edit === "1",
+  }),
   head: () => ({
     meta: [
       { title: "Your digital inventory — Aftermath" },
@@ -26,6 +31,7 @@ export const Route = createFileRoute("/inventory")({
   }),
   component: InventoryPage,
 });
+
 
 const BANK_OPTIONS = ["Revolut", "Wise", "PayPal", "Venmo", "Cash App", "Traditional bank app"];
 const EMAIL_OPTIONS = ["Gmail", "Outlook / Hotmail", "iCloud Mail", "Proton Mail", "Yahoo", "Custom domain"];
