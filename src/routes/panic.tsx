@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import {
   getCurrentIncident,
-  getSamplePlan,
   INCIDENTS,
+  loadPlan,
   loadProgress,
   type IncidentType,
+  type Plan,
 } from "@/lib/aftermath-store";
 
 export const Route = createFileRoute("/panic")({
@@ -28,20 +29,53 @@ export const Route = createFileRoute("/panic")({
 function PanicPage() {
   const navigate = useNavigate();
   const [incidentId, setIncidentId] = useState<IncidentType | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [checked, setChecked] = useState<boolean[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openMsg, setOpenMsg] = useState<number | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     const id = getCurrentIncident();
     setIncidentId(id);
-    if (id) {
-      const p = getSamplePlan(id);
-      loadProgress(id).then((prog) => {
-        setChecked(prog ?? new Array(p.steps.length).fill(false));
-      });
+    if (!id) {
+      setLoading(false);
+      return;
     }
+    const [p, prog] = await Promise.all([loadPlan(id), loadProgress(id)]);
+    setPlan(p);
+    if (p) {
+      setChecked(
+        prog && prog.length === p.steps.length
+          ? prog
+          : new Array(p.steps.length).fill(false),
+      );
+    } else {
+      setChecked(prog ?? []);
+    }
+    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    refresh();
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [refresh]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white">
+        <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+          <p className="mt-4 text-lg text-neutral-300">Loading your plan…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!incidentId) {
     return (
@@ -66,7 +100,33 @@ function PanicPage() {
   }
 
   const incident = INCIDENTS.find((i) => i.id === incidentId)!;
-  const plan = getSamplePlan(incidentId);
+
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white">
+        <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
+          <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+            Panic Mode
+          </span>
+          <h1 className="mt-6 text-2xl font-bold">{incident.title}</h1>
+          <p className="mt-3 text-lg text-neutral-300">
+            Your action plan hasn't been generated yet. Open it once, then this screen will
+            stay in sync.
+          </p>
+          <button
+            onClick={() => navigate({ to: "/plan/$type", params: { type: incidentId } })}
+            className="mt-8 w-full rounded-2xl bg-white px-6 py-4 text-lg font-bold text-neutral-950"
+          >
+            Generate my plan
+          </button>
+          <Link to="/" className="mt-4 text-sm text-neutral-400 underline">
+            Back home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const done = checked.filter(Boolean).length;
   const total = plan.steps.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
@@ -97,6 +157,9 @@ function PanicPage() {
     );
   }
 
+  const nextStepIdx = checked.findIndex((c) => !c);
+  const nextStep = nextStepIdx >= 0 ? plan.steps[nextStepIdx] : null;
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <div className="mx-auto max-w-lg px-6 py-8">
@@ -125,6 +188,14 @@ function PanicPage() {
               style={{ width: `${pct}%` }}
             />
           </div>
+          {nextStep && (
+            <div className="mt-4 rounded-xl bg-neutral-800 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                Next step
+              </p>
+              <p className="mt-1 text-base font-semibold text-white">{nextStep.action}</p>
+            </div>
+          )}
           <Link
             to="/plan/$type"
             params={{ type: incidentId }}

@@ -6,11 +6,13 @@ import {
   INCIDENTS,
   loadInventory,
   loadProgress,
+  savePlan,
   saveProgress,
   setCurrentIncident,
   type IncidentType,
 } from "@/lib/aftermath-store";
 import { generateActionPlan, type GroqPlan } from "@/lib/groq-plan.functions";
+
 
 const VALID: IncidentType[] = INCIDENTS.map((i) => i.id);
 
@@ -57,12 +59,17 @@ function PlanPage() {
         },
       });
       setPlan(result);
+      void savePlan(incidentId, result);
       const saved = await loadProgress(incidentId);
-      setChecked(
+      const nextChecked =
         saved && saved.length === result.steps.length
           ? saved
-          : new Array(result.steps.length).fill(false),
-      );
+          : new Array(result.steps.length).fill(false);
+      setChecked(nextChecked);
+      if (!saved || saved.length !== result.steps.length) {
+        void saveProgress(incidentId, nextChecked);
+      }
+
     } catch (err) {
       console.error(err);
       setError("We couldn't generate your plan just now. Take a breath and try again.");

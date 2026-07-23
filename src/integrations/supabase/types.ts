@@ -32,6 +32,27 @@ export type Database = {
         }
         Relationships: []
       }
+      device_plans: {
+        Row: {
+          device_id: string
+          incident_type: string
+          plan: Json
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          incident_type: string
+          plan: Json
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          incident_type?: string
+          plan?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       device_progress: {
         Row: {
           checked: Json
