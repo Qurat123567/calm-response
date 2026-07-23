@@ -53,6 +53,15 @@ function IncidentsPage() {
           </button>
         ))}
       </div>
+      <div className="mt-6 text-center">
+        <Link
+          to="/inventory"
+          search={{ edit: true }}
+          className="text-sm text-muted-foreground underline hover:text-foreground"
+        >
+          Edit my inventory
+        </Link>
+      </div>
     </AppShell>
   );
 }
