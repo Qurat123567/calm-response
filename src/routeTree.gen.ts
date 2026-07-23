@@ -9,38 +9,99 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PanicRouteImport } from './routes/panic'
+import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as IncidentsRouteImport } from './routes/incidents'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlanTypeRouteImport } from './routes/plan.$type'
 
+const PanicRoute = PanicRouteImport.update({
+  id: '/panic',
+  path: '/panic',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryRoute = InventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IncidentsRoute = IncidentsRouteImport.update({
+  id: '/incidents',
+  path: '/incidents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlanTypeRoute = PlanTypeRouteImport.update({
+  id: '/plan/$type',
+  path: '/plan/$type',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/incidents': typeof IncidentsRoute
+  '/inventory': typeof InventoryRoute
+  '/panic': typeof PanicRoute
+  '/plan/$type': typeof PlanTypeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/incidents': typeof IncidentsRoute
+  '/inventory': typeof InventoryRoute
+  '/panic': typeof PanicRoute
+  '/plan/$type': typeof PlanTypeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/incidents': typeof IncidentsRoute
+  '/inventory': typeof InventoryRoute
+  '/panic': typeof PanicRoute
+  '/plan/$type': typeof PlanTypeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
+  id: '__root__' | '/' | '/incidents' | '/inventory' | '/panic' | '/plan/$type'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  IncidentsRoute: typeof IncidentsRoute
+  InventoryRoute: typeof InventoryRoute
+  PanicRoute: typeof PanicRoute
+  PlanTypeRoute: typeof PlanTypeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/panic': {
+      id: '/panic'
+      path: '/panic'
+      fullPath: '/panic'
+      preLoaderRoute: typeof PanicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory': {
+      id: '/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof InventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/incidents': {
+      id: '/incidents'
+      path: '/incidents'
+      fullPath: '/incidents'
+      preLoaderRoute: typeof IncidentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +109,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plan/$type': {
+      id: '/plan/$type'
+      path: '/plan/$type'
+      fullPath: '/plan/$type'
+      preLoaderRoute: typeof PlanTypeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  IncidentsRoute: IncidentsRoute,
+  InventoryRoute: InventoryRoute,
+  PanicRoute: PanicRoute,
+  PlanTypeRoute: PlanTypeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
