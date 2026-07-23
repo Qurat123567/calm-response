@@ -38,6 +38,18 @@ export type Inventory = {
 
 const DEVICE_KEY = "aftermath.deviceId.v1";
 const INCIDENT_KEY = "aftermath.currentIncident.v1";
+const OTHER_DESC_KEY = "aftermath.otherDescription.v1";
+
+export function setOtherDescription(text: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(OTHER_DESC_KEY, text);
+}
+
+export function getOtherDescription(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(OTHER_DESC_KEY) ?? "";
+}
+
 
 export const emptyInventory = (): Inventory => ({
   bankApps: [],
